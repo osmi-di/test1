@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stats for {{ link_id }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Statistics for {{ link_id }}</h1>
+        
+        <div class="section">
+            <h2>Quick Stats</h2>
+            <a href="/export/{{ link_id }}/csv" class="btn">Export to CSV</a>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <h3>Total Clicks</h3>
+                    <p>{{ stats[0][0] if stats else 0 }}</p>
+                </div>
+                <div class="stat-box">
+                    <h3>Unique Visitors</h3>
+                    <p>{{ stats[0][1] if stats else 0 }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Detailed Statistics</h2>
+            <table>
+                <tr>
+                    <th>Country</th>
+                    <th>Platform</th>
+                    <th>Browser</th>
+                    <th>Clicks</th>
+                </tr>
+                {% for stat in stats %}
+                <tr>
+                    <td>{{ stat[2] }}</td>
+                    <td>{{ stat[3] }}</td>
+                    <td>{{ stat[4] }}</td>
+                    <td>{{ stat[0] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Recent Activity</h2>
+            <table>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>IP Address</th>
+                    <th>Country</th>
+                    <th>Platform</th>
+                    <th>Browser</th>
+                    <th>Referrer</th>
+                </tr>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log[7] }}</td>
+                    <td>{{ log[2] }}</td>
+                    <td>{{ log[3] }}</td>
+                    <td>{{ log[4] }}</td>
+                    <td>{{ log[5] }}</td>
+                    <td>{{ log[6] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</body>
+</html>
