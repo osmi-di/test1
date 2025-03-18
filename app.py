@@ -122,6 +122,8 @@ def track(link_id):
 @app.route('/stats/<link_id>')
 @require_cookie
 def stats(link_id):
+    tracking_url = f"{request.host_url}{link_id}"  # Добавлено
+
     with sqlite3.connect(app.config['DATABASE']) as conn:
         c = conn.cursor()
         
@@ -149,7 +151,8 @@ def stats(link_id):
     return render_template('stats.html', 
                          stats=stats,
                          logs=logs,
-                         link_id=link_id)
+                         link_id=link_id,
+                         tracking_url=tracking_url)  # Добавлено
 
 
 
