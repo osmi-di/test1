@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IPLogger - Create Tracking Link</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Create Tracking Link</h1>
+        <form action="/create" method="POST">
+            <div class="form-group">
+                <label>Target URL:</label>
+                <input type="url" name="target_url" 
+                     placeholder="https://example.com/" required>
+            </div>
+            <button type="submit">Generate Tracking Link</button>
+        </form>
+    </div>
+</body>
+</html>
