@@ -34,11 +34,6 @@ def init_db():
                      latitude REAL,  # Добавлено
                      longitude REAL, # Добавлено
                      timestamp DATETIME)''')
-        c.execute('''CREATE TABLE IF NOT EXISTS links 
-                    (id TEXT PRIMARY KEY,
-                     created_at DATETIME,
-                     target_url TEXT)''')
-        conn.commit()
 
 init_db()
 
@@ -79,7 +74,43 @@ def track(link_id):
     
     # Оригинальный код сбора данных
     ip = request.remote_addr
-    # ... (остальной код сбора данных без изменений)
+    user_agent = request.headers.get('User-Agent')
+    referrer = request.referrer
+    timestamp = datetime.now()
+    
+    # Парсим User-Agent
+    platform = 'Unknown'
+    browser = 'Unknown'
+    if 'Windows' in user_agent:
+        platform = 'Windows'
+    elif 'Linux' in user_agent:
+        platform = 'Linux'
+    elif 'Mac' in user_agent:
+        platform = 'MacOS'
+    elif 'iPhone' in user_agent:
+        platform = 'iPhone'
+    elif 'Android' in user_agent:
+        platform = 'Android'
+
+    if 'Chrome' in user_agent:
+        browser = 'Chrome'
+    elif 'Firefox' in user_agent:
+        browser = 'Firefox'
+    elif 'Safari' in user_agent:
+        browser = 'Safari'
+    elif 'Edge' in user_agent:
+        browser = 'Edge'
+    elif 'Opera' in user_agent:
+        browser = 'Opera'
+    
+    # Определяем страну по IP (базовое определение)
+    country = 'Unknown'
+    try:
+        from ip2geotools.databases.noncommercial import DbIpCity
+        res = DbIpCity.get(ip, api_key='free')
+        country = res.country
+    except:
+        pass
     
     # Сохраняем базовую запись
     with sqlite3.connect(app.config['DATABASE']) as conn:
