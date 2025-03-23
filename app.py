@@ -31,6 +31,8 @@ def init_db():
                      platform TEXT,
                      browser TEXT,
                      referrer TEXT,
+                     latitude REAL,  # Добавлено
+                     longitude REAL, # Добавлено
                      timestamp DATETIME)''')
         c.execute('''CREATE TABLE IF NOT EXISTS links 
                     (id TEXT PRIMARY KEY,
